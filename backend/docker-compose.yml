@@ -1,0 +1,43 @@
+name: lexchain-2.0
+
+services:
+  backend:
+    build: .
+    image: lexchain-2.0:latest
+    container_name: lexChain-backend-2.0
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./src:/app/src
+      - ../blockchain:/app/blockchain:ro
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --no-use-colors
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app
+
+  db:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app
+
+volumes:
+  postgres_data:
+
+networks:
+  app:

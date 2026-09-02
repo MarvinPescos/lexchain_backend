@@ -109,6 +109,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.production
 .venv
 env/
 venv/
@@ -158,3 +159,4 @@ ssh-key-2026-07-27.key.pub
 .claude/skills
 .agents/skills
 skills-lock.json
+pics

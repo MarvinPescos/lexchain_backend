@@ -1,0 +1,34 @@
+# Use the official lightweight Python 3.12 image as the base
+FROM python:3.12-slim
+
+# Create a non-root user for security purposes
+RUN useradd --create-home appuser
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the uv and uvx package manager binaries from the official image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Keep the venv OUTSIDE /app so the compose bind mount cannot shadow it
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+    UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
+    PYTHONPATH=/app/src \
+    PATH=/opt/venv/bin:$PATH
+
+# Copy dependency management files to the working directory
+COPY pyproject.toml uv.lock ./
+
+# Install project dependencies strictly according to the lockfile
+RUN uv sync --locked
+
+# Copy the remaining application source code into the container
+COPY . .
+
+# Drop privileges - code stays root-owned and read-only to the app
+USER appuser
+
+
+# Define the default command to start the application server
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
