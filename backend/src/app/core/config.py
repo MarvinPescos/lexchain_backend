@@ -34,5 +34,11 @@ class Settings(BaseSettings):
         default=1800, description="Seconds before a connection is recycled; -1 disables"
     )
 
+    SUPABASE_URL: str = Field(..., description="Supabase project URL")
+    SUPABASE_ANON_KEY: str = Field(..., description="Supabase anonymous key")
+    SUPABASE_SERVICE_ROLE_KEY: str = Field(
+        ..., description="Supabase role key for admin operations"
+    )
+
 
 settings = Settings()  # pyright: ignore[reportCallIssue]
