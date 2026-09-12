@@ -1,5 +1,7 @@
 from collections.abc import AsyncGenerator
+from typing import Annotated
 
+from fastapi import Depends
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -52,6 +54,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+
+# Declare the dependency once here so call sites annotate `session: DbSession`
+# instead of putting a `Depends()` call in an argument default.
+DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def close_db():
