@@ -1,27 +1,16 @@
-"""Account roles and document-party roles.
+"""
 
-`admin` is the super admin: it carries every lawyer capability plus the
-platform-wide ones, so any lawyer check must also pass for an admin.
-`lawyer` is the primary authority over documents — owner of the books and
-documents they upload.  `user` is a client: read-only, and only on documents
-they have been whitelisted on.
+Account roles and document-party roles.
+
+There are exactly two account roles. `lawyer` is the primary authority — owner
+of the books and documents they upload, and the one who runs the admin panel;
+there is no separate admin tier above it. `user` is a client: read-only, and
+only on documents they have been whitelisted on.
+
 """
 
 ROLE_LAWYER = "lawyer"
 ROLE_USER = "user"
-
-# Admin and lawyer are one role now: the lawyer is the primary authority and
-# also runs the admin panel (dashboard, users, invitations). These strings are
-# still accepted so accounts created before the merge keep working — existing
-# rows use "super_admin", which matched neither check previously and left those
-# accounts locked out of both lawyer and admin endpoints.
-LEGACY_ADMIN_ROLES = ("admin", "super_admin")
-
-# Every role that holds lawyer authority.
-LAWYER_ROLES = (ROLE_LAWYER, *LEGACY_ADMIN_ROLES)
-
-# Kept as an alias so older imports resolve; there is no separate admin tier.
-ROLE_ADMIN = ROLE_LAWYER
 
 # Roles a user can hold on a single document they do not own.
 PARTY_ROLE_VIEWER = "viewer"
