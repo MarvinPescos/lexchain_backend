@@ -1,5 +1,7 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, Response, status
 
+from app.core import settings
+from app.infrastructure.rate_limiting import limiter
 from app.infrastructure.security.dependencies import CurrentUser, TokenCredentials
 
 from .dependencies import AuthServiceDep
@@ -13,6 +15,12 @@ from .schemas import (
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# Every route below takes `request` and `response` purely for slowapi. It reads
+# the caller's IP off `request` (and refuses to wrap a handler without one), and
+# writes the X-RateLimit-* headers into `response` — a route returning a pydantic
+# model has no Response of its own, and slowapi raises rather than skipping when
+# that parameter is missing, which turns every success into a 500.
 
 
 @router.post(
@@ -29,10 +37,17 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     responses={
         201: {"description": "User created successfully"},
         400: {"description": "Invalid input or user already exists"},
+        429: {"description": "Too many signups from this IP"},
         502: {"description": "Failed to connect to Supabase"},
     },
 )
-async def sign_up(data: SignUpRequest, service: AuthServiceDep) -> SignUpResponse:
+@limiter.limit(settings.RATE_LIMIT_SIGNUP)
+async def sign_up(
+    request: Request,
+    response: Response,
+    data: SignUpRequest,
+    service: AuthServiceDep,
+) -> SignUpResponse:
     return await service.sign_up(data)
 
 
@@ -48,10 +63,17 @@ async def sign_up(data: SignUpRequest, service: AuthServiceDep) -> SignUpRespons
     responses={
         200: {"description": "Successfully authenticated"},
         401: {"description": "Invalid credentials, email not verified, or account deactivated"},
+        429: {"description": "Too many sign-in attempts from this IP"},
         502: {"description": "Failed to connect to Supabase"},
     },
 )
-async def sign_in(data: SignInRequest, service: AuthServiceDep) -> SignInResponse:
+@limiter.limit(settings.RATE_LIMIT_SIGNIN)
+async def sign_in(
+    request: Request,
+    response: Response,
+    data: SignInRequest,
+    service: AuthServiceDep,
+) -> SignInResponse:
     return await service.sign_in(data)
 
 
@@ -71,11 +93,17 @@ async def sign_in(data: SignInRequest, service: AuthServiceDep) -> SignInRespons
     responses={
         200: {"description": "Session revoked"},
         401: {"description": "Missing, invalid, or expired token"},
+        429: {"description": "Too many logout calls from this IP"},
         502: {"description": "Failed to connect to Supabase"},
     },
 )
+@limiter.limit(settings.RATE_LIMIT_LOGOUT)
 async def logout(
-    user: CurrentUser, credentials: TokenCredentials, service: AuthServiceDep
+    request: Request,
+    response: Response,
+    user: CurrentUser,
+    credentials: TokenCredentials,
+    service: AuthServiceDep,
 ) -> MessageResponse:
     return await service.sign_out(credentials.credentials, user.user_id)
 
@@ -91,9 +119,14 @@ async def logout(
     """,
     responses={
         200: {"description": "Request accepted"},
+        429: {"description": "Too many verification emails requested from this IP"},
     },
 )
+@limiter.limit(settings.RATE_LIMIT_RESEND_VERIFICATION)
 async def resend_verification(
-    data: ResendVerificationRequest, service: AuthServiceDep
+    request: Request,
+    response: Response,
+    data: ResendVerificationRequest,
+    service: AuthServiceDep,
 ) -> MessageResponse:
     return await service.resend_verification_email(data.email)

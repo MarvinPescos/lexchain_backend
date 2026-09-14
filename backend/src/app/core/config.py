@@ -1,4 +1,5 @@
-from pydantic import Field
+from limits import parse_many
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,7 +18,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field(..., description="development or production")
 
     DB_URL: str = Field(..., description="Database URL")
-    TEST_DB_URL: str = Field(..., description="Database URL for testing")
+    # TEST_DB_URL: str = Field(..., description="Database URL for testing")
 
     # Connection pool tuning. Defaults match SQLAlchemy's own, except
     # DB_POOL_RECYCLE, which guards against managed Postgres / pgbouncer
@@ -39,6 +40,50 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str = Field(
         ..., description="Supabase role key for admin operations"
     )
+
+    # Rate limiting. Every value is a slowapi limit string ("<count>/<period>")
+    # counted per client IP. The unauthenticated auth routes get the tight
+    # limits; RATE_LIMIT_DEFAULT is the ceiling every other route falls back to.
+    RATE_LIMIT_ENABLED: bool = Field(default=True, description="Master switch for IP rate limiting")
+    RATE_LIMIT_DEFAULT: str = Field(
+        default="100/minute", description="Fallback limit for routes without their own"
+    )
+    RATE_LIMIT_SIGNUP: str = Field(default="5/hour", description="Limit for POST /auth/signup")
+    RATE_LIMIT_SIGNIN: str = Field(default="5/minute", description="Limit for POST /auth/signin")
+    RATE_LIMIT_LOGOUT: str = Field(default="20/minute", description="Limit for POST /auth/logout")
+    RATE_LIMIT_RESEND_VERIFICATION: str = Field(
+        default="3/hour", description="Limit for POST /auth/resend-verification"
+    )
+
+    @field_validator(
+        "RATE_LIMIT_DEFAULT",
+        "RATE_LIMIT_SIGNUP",
+        "RATE_LIMIT_SIGNIN",
+        "RATE_LIMIT_LOGOUT",
+        "RATE_LIMIT_RESEND_VERIFICATION",
+    )
+    @classmethod
+    def _validate_rate_limit(cls, value: str) -> str:
+        """Reject limit strings slowapi cannot parse.
+
+        slowapi only *logs* a parse failure and then leaves the route
+        unlimited, so a typo like "5/min" would silently turn the limit off.
+        Failing at startup makes that a loud error instead of a quiet hole.
+
+        Args:
+            value: The candidate limit string.
+
+        Returns:
+            The value unchanged, once it is known to parse.
+
+        Raises:
+            ValueError: If the string is not a valid rate limit expression.
+        """
+        try:
+            parse_many(value)
+        except ValueError as exc:
+            raise ValueError(f"Invalid rate limit string: {value!r}") from exc
+        return value
 
 
 settings = Settings()  # pyright: ignore[reportCallIssue]
