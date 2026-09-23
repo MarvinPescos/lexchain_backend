@@ -65,7 +65,7 @@ async def get_current_user(
     token = credentials.credentials
     payload = await asyncio.to_thread(verify_jwt_token, token)
 
-    from app.features.users.repository import UserRepository
+    from app.features.accounts.repository import UserRepository
 
     user_repo = UserRepository(session)
     supabase_user_id = payload["sub"]

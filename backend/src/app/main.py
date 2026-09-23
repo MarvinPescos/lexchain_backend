@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.features.auth import router as auth_router
+from app.features.accounts import router as auth_router
 from app.infrastructure.database.sessions import close_db
 from app.infrastructure.observability.logging_setup import log
 from app.infrastructure.rate_limiting import limiter, rate_limit_exceeded_handler
