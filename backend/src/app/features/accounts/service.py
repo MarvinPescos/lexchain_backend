@@ -4,9 +4,8 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from supabase import AuthApiError, Client
 
-from app.features.users.repository import UserRepository
-from app.infrastructure.clients import build_supabase_auth_client, get_supabase_admin
 from app.infrastructure.observability.logging_setup import log
+from app.infrastructure.supabase import build_supabase_auth_client, get_supabase_admin
 from app.shared.errors.exceptions import (
     BadGatewayError,
     BadRequestError,
@@ -14,6 +13,7 @@ from app.shared.errors.exceptions import (
 )
 from app.shared.utils import _mask_email
 
+from .repository import UserRepository
 from .schemas import (
     MessageResponse,
     SignInRequest,
