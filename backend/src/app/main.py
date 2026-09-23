@@ -6,7 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.features.auth import router as auth_router
+from app.features.accounts import router as auth_router
 from app.infrastructure.database.sessions import close_db
 from app.infrastructure.observability.logging_setup import log
 from app.shared.errors.exceptions import HTTP_ERROR_TYPES, BaseAppException, build_error_response
