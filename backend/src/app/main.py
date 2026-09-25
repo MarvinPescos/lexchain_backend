@@ -9,6 +9,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.features.accounts import router as auth_router
+from app.features.books import router as books_router
 from app.infrastructure.database.sessions import close_db
 from app.infrastructure.observability.logging_setup import log
 from app.infrastructure.rate_limiting import limiter, rate_limit_exceeded_handler
@@ -90,3 +91,4 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 app.include_router(auth_router)
+app.include_router(books_router)
