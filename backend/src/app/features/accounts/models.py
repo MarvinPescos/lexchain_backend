@@ -1,11 +1,15 @@
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, CheckConstraint, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.database import Base, TimestampMixin
 from app.shared.constants import ROLE_LAWYER, ROLE_USER
+
+if TYPE_CHECKING:
+    from app.features.books import Book
 
 
 class User(Base, TimestampMixin):
@@ -27,6 +31,9 @@ class User(Base, TimestampMixin):
     avatar: Mapped[str] = mapped_column(
         String(50), default="icon1", server_default="icon1", nullable=False
     )
+
+    # === relationship ===
+    books: Mapped[list["Book"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.email}>"
